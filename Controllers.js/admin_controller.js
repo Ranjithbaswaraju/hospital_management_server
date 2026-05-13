@@ -26,6 +26,9 @@ const AddDoctor = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    //image upload
+    const image = req.file ? req.file.filename : "";
+
     const user = await AuthModel.create({
       name,
       email,
@@ -41,7 +44,7 @@ const AddDoctor = async (req, res) => {
 
       experience,
       fees,
-
+      image,
       hospital,
     });
 

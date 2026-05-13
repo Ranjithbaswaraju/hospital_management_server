@@ -45,9 +45,9 @@ const DoctorSchema = new mongoose.Schema(
     hospital: {
       type: String,
     },
-    //     image:{
-    //     type:String
-    // }
+        image:{
+        type:String
+    }
   },
   { timestamps: true },
 );

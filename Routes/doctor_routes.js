@@ -3,6 +3,7 @@ const {
   AddSlot,
   Appointments,
   UpdateAppointment,
+  DoctorProfile,
 } = require("../Controllers.js/doctor_controller");
 const AuthMiddleWare = require("../MiddleWares/authmiddleware");
 const checkRole = require("../MiddleWares/roleMiddleWare");
@@ -21,5 +22,11 @@ router.put(
   checkRole("doctor"),
   UpdateAppointment,
 );
+router.get(
+   "/doctor/profile",
+  AuthMiddleWare,
+  checkRole("doctor"),
+  DoctorProfile
+)
 
 module.exports = router;

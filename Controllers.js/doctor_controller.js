@@ -3,7 +3,7 @@ const SlotModel = require("../Models/SlotModel");
 
 // Add Slot With Automatic 30-Min Split
 const AddSlot = async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   const { doctorId, date, startTime, endTime, days } = req.body;
 
   try {
@@ -101,8 +101,47 @@ const UpdateAppointment = async (req, res) => {
   }
 };
 
+// controller/doctorController.js
+
+const DoctorModel = require("../Models/DoctorModel");
+
+const DoctorProfile = async (req, res) => {
+  try {
+
+    const doctor =
+      await DoctorModel.findOne({
+        userId: req.user.id,
+      }).populate("userId");
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor Not Found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Doctor Profile Fetched",
+      doctor,
+    });
+
+  } catch (err) {
+
+    console.log(err);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "Unable To Fetch Profile",
+    });
+  }
+};
+
+
 module.exports = {
   AddSlot,
   Appointments,
   UpdateAppointment,
+  DoctorProfile
 };

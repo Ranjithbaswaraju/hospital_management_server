@@ -1,26 +1,48 @@
+
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
-dotenv.config();
-const secretkey = process.env.secretkey;
-const AuthMiddleWare = (req, res, next) => {
+const AuthMiddleWare = (
+  req,
+  res,
+  next
+) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+
+    const authHeader =
+      req.headers.authorization;
+
+    console.log(authHeader);
+
+    if (!authHeader) {
       return res.status(401).json({
-        status: false,
-        message: "Token Missing",
+        success: false,
+        message: "No Token Provided",
       });
     }
-    const token = authHeader.split(" ")[1];
-    const verifyToken = jwt.verify(token, secretkey);
-    req.user = verifyToken;
-    console.log(verifyToken);
+
+    // remove Bearer
+    const token =
+      authHeader.split(" ")[1];
+
+    console.log(token);
+
+    const decoded = jwt.verify(
+      token,
+      process.env.secretkey
+    );
+
+    req.user = decoded;
+
     next();
+
   } catch (err) {
+
+    console.log(err);
+
     return res.status(401).json({
       success: false,
       message: "Invalid Token",
     });
   }
 };
+
 module.exports = AuthMiddleWare;
