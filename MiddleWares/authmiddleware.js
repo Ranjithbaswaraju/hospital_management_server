@@ -14,6 +14,7 @@ const AuthMiddleWare = (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const verifyToken = jwt.verify(token, secretkey);
     req.user = verifyToken;
+    console.log(verifyToken);
     next();
   } catch (err) {
     return res.status(401).json({

@@ -1,31 +1,7 @@
 const AppointmentModel = require("../Models/AppointmentModel");
 const AuthModel = require("../Models/AuthModel");
 const DoctorModel = require("../Models/DoctorModel");
-const bcrypt=require("bcrypt")
-
-// const AddDoctor = async (req, res) => {
-//   try {
-//     const doctor = await DoctorModel.create({
-//       userId: req.body.userId,
-//       name:req.body.name,
-//       specialization: req.body.specialization,
-//       experience: req.body.experience,
-//       fees: req.body.fees,
-//       hospital: req.body.hospital,
-//     });
-
-//     res.status(200).json({
-//         status:true,
-//         message:"Doctor Added Successfully",
-//         doctor
-//     })
-//   } catch (err) {
-//     return res.status(500).json({
-//       success: false,
-//       message: "Unable to Add Doctor",
-//     });
-//   }
-// };
+const bcrypt = require("bcrypt");
 
 const AddDoctor = async (req, res) => {
   try {
@@ -60,7 +36,6 @@ const AddDoctor = async (req, res) => {
     const doctor = await DoctorModel.create({
       userId: user._id,
 
-      
       specialization,
 
       experience,
@@ -89,7 +64,7 @@ const AddDoctor = async (req, res) => {
 
 const AllDoctors = async (req, res) => {
   try {
-    const doctors = await DoctorModel.find();
+    const doctors = await DoctorModel.find().populate("userId");
     res.status(200).json({
       success: true,
       message: "Fetched all Doctors",
@@ -118,13 +93,14 @@ const DeleteDoctor = async (req, res) => {
     });
   }
 };
+
 const AllAppointments = async (req, res) => {
   try {
     const Appointments = await AppointmentModel.find()
       .populate("patientId")
       .populate("doctorId");
 
-    return res.json(200).json({
+    return res.status(200).json({
       success: true,
       message: "Fetched all Appointments",
       Appointments,
@@ -137,4 +113,80 @@ const AllAppointments = async (req, res) => {
   }
 };
 
-module.exports = { AddDoctor, AllAppointments, AllDoctors, DeleteDoctor };
+const patients = async (req, res) => {
+  try {
+    const patients = await AuthModel.find({ role: "patient" });
+
+    return res.status(200).json({
+      success: true,
+
+      message: "Fetched all Patients",
+
+      patients,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load the Patients",
+    });
+  }
+};
+
+const AdminStats = async (req, res) => {
+  try {
+    // total doctors
+    const totalDoctors = await DoctorModel.countDocuments();
+
+    // total patients
+    const totalPatients = await AuthModel.countDocuments({
+      role: "patient",
+    });
+
+    // total appointments
+    const totalAppointments = await AppointmentModel.countDocuments();
+
+    // booked appointments
+    const bookedAppointments = await AppointmentModel.countDocuments({
+      status: "Booked",
+    });
+
+    // completed appointments
+    const completedAppointments = await AppointmentModel.countDocuments({
+      status: "Completed",
+    });
+
+    // cancelled appointments
+    const cancelledAppointments = await AppointmentModel.countDocuments({
+      status: "Cancelled",
+    });
+
+    return res.status(200).json({
+      success: true,
+
+      stats: {
+        totalDoctors,
+        totalPatients,
+        totalAppointments,
+        bookedAppointments,
+        completedAppointments,
+        cancelledAppointments,
+      },
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to Fetch Admin Stats",
+    });
+  }
+};
+
+module.exports = {
+  AddDoctor,
+  AllAppointments,
+  AllDoctors,
+  DeleteDoctor,
+  patients,
+  AdminStats,
+};

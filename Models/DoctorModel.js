@@ -1,53 +1,52 @@
-const mongoose=require("mongoose")
+const mongoose = require("mongoose");
 
-
-const DoctorSchema=new mongoose.Schema({
-    userId:{
-        type:mongoose.Schema.Types.ObjectId,
-        ref:"User"
+const DoctorSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AuthModel",
     },
-    
-    specialization:{
-        type:String,
-        required:true,
-         enum:[
 
-            "Cardiology",
+    specialization: {
+      type: String,
+      required: true,
+      enum: [
+        "Cardiology",
 
-            "Dermatology",
+        "Dermatology",
 
-            "Neurology",
+        "Neurology",
 
-            "Orthopaedics",
+        "Orthopaedics",
 
-            "Paediatrics",
+        "Paediatrics",
 
-            "Gynaecology and obstetrics",
+        "Gynaecology and obstetrics",
 
-            "ENT",
+        "ENT",
 
-            "Ophthalmology",
+        "Ophthalmology",
 
-            "Psychiatry and mental health"
-
-        ],
+        "Psychiatry and mental health",
+      ],
     },
-    experience:{
-        type:Number,
-        required:true
+    experience: {
+      type: Number,
+      required: true,
     },
-    fees:{
-          type:Number,
-        required:true
+    fees: {
+      type: Number,
+      required: true,
     },
-     hospital:{
-        type:String
+    hospital: {
+      type: String,
     },
     //     image:{
     //     type:String
     // }
+  },
+  { timestamps: true },
+);
 
-},{timestamps:true})
-
-const DoctorModel=mongoose.model("Doctor",DoctorSchema)
-module.exports=DoctorModel
+const DoctorModel = mongoose.model("Doctor", DoctorSchema);
+module.exports = DoctorModel;

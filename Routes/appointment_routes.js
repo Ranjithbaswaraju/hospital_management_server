@@ -6,7 +6,7 @@ const router=express.Router()
 
 router.post("/appointment/book",AuthMiddleWare,checkRole("patient"),BookAppointment)
 router.delete("/appointment/cancel/:id",AuthMiddleWare,checkRole("patient"),CancelAppointment)
-router.get("/appointment/my-appointment",AuthMiddleWare,checkRole("patient"),MyAppointments)
+router.get("/appointment/my-appointment/",AuthMiddleWare,checkRole("patient"),MyAppointments)
 
 
 module.exports=router

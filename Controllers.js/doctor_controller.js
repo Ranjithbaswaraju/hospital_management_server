@@ -1,60 +1,108 @@
-const AppointmentModel = require("../Models/AppointmentModel")
-const SlotModel = require("../Models/SlotModel")
+const AppointmentModel = require("../Models/AppointmentModel");
+const SlotModel = require("../Models/SlotModel");
 
+// Add Slot With Automatic 30-Min Split
+const AddSlot = async (req, res) => {
+  console.log(req.body);
+  const { doctorId, date, startTime, endTime, days } = req.body;
 
-const AddSlot=async(req,res)=>{
-    const {doctorId,date,time}=req.body
-    try{
-        const Slot=await  SlotModel.create({
-            doctorId,
-            date,
-            time
-        })
+  try {
+    // convert into date objects
+    let current = new Date(`${date}T${startTime}`);
+
+    let end = new Date(`${date}T${endTime}`);
+
+    let slots = [];
+
+    // loop until end time
+    while (current < end) {
+      // format time
+      let formattedTime = current.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+
+        minute: "2-digit",
+
+        hour12: true,
+      });
+
+      // save slot
+      const slot = await SlotModel.create({
+        doctorId,
+
+        date,
+
+        time: formattedTime,
+
+        days,
+      });
+
+      slots.push(slot);
+
+      // add 30 mins
+      current.setMinutes(current.getMinutes() + 30);
+    }
 
     return res.status(200).json({
-        success:true,
-        message:"Slot Added Successfully",
-        Slot
-    })
-    }
-    catch(err){
-        return res.status(500).json({
-            success:false,
-            message:"Unable to add slot"   
-        })
-    }
-}
-const Appointments=async(req,res)=>{
-    try{
-        const appointments=await AppointmentModel.find()
-        return res.status(200).json({
-            success:true,
-            message:"Fetched all Appointments",
-            appointments
-        })
-    }
-    catch(err){
-        return res.status(500).json({
-          success:"Unable to Load the Appointments"  
-        })
-    }
-}
-const UpdateAppointment=async(req,res)=>{
-    const {status}=req.body
-    const id=req.params.id
-    try{
-        const updateAppointment=await AppointmentModel.findByIdAndDelete(id,{status},{new:true})
-        res.status(200).json({
-            success:true,
-            message:"Appointment Status Updated Successfully"
-        })
-    }
-    catch(err){
-        return res.status(500).json({
-            success:false,
-            message:"Unable to Update the Status"
-        })
-    }
-}
+      success: true,
+      message: "Slots Added Successfully",
+      slots,
+    });
+  } catch (err) {
+    console.log(err);
 
-module.exports={AddSlot,Appointments,UpdateAppointment}
+    return res.status(500).json({
+      success: false,
+      message: "Unable to add slots",
+    });
+  }
+};
+
+// Get All Appointments
+const Appointments = async (req, res) => {
+  try {
+    const appointments = await AppointmentModel.find();
+
+    return res.status(200).json({
+      success: true,
+      message: "Fetched all Appointments",
+      appointments,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Unable to Load the Appointments",
+    });
+  }
+};
+
+// Update Appointment Status
+const UpdateAppointment = async (req, res) => {
+  const { status } = req.body;
+
+  const id = req.params.id;
+
+  try {
+    const updateAppointment = await AppointmentModel.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true },
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Appointment Status Updated Successfully",
+      updateAppointment,
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Unable to Update the Status",
+    });
+  }
+};
+
+module.exports = {
+  AddSlot,
+  Appointments,
+  UpdateAppointment,
+};

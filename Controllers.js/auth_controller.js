@@ -6,7 +6,7 @@ dotenv.config();
 const secretkey = process.env.secretkey;
 const Register = async (req, res) => {
   try {
-    const { name, email, password, role,dob,phone } = req.body;
+    const { name, email, password, role, dob, phone } = req.body;
 
     const userExist = await AuthModel.findOne({ email });
 
@@ -25,7 +25,7 @@ const Register = async (req, res) => {
       password: hashPassword,
       role,
       dob,
-      phone
+      phone,
     });
 
     res.status(200).json({
@@ -40,7 +40,6 @@ const Register = async (req, res) => {
       message: err.message,
     });
   }
-
 };
 const Login = async (req, res) => {
   try {
@@ -104,9 +103,7 @@ const Logout = async (req, res) => {
 
 const profile = async (req, res) => {
   try {
-    const userData = await AuthModel.findById(req.user.id).select(
-      "-password",
-    );
+    const userData = await AuthModel.findById(req.user.id).select("-password");
     return res.status(200).json({
       success: true,
       userData,
@@ -122,5 +119,3 @@ const profile = async (req, res) => {
 };
 
 module.exports = { Register, Login, Logout, profile };
-
-

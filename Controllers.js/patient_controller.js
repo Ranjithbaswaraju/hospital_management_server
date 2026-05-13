@@ -1,17 +1,21 @@
 const DoctorModel = require("../Models/DoctorModel");
+const SlotModel = require("../Models/SlotModel");
 
 const Doctors = async (req, res) => {
   try {
-    const doctors = await DoctorModel.find();
+    const doctors = await DoctorModel.find().populate("userId");
+
     return res.status(200).json({
       success: true,
-      Message: "Doctors Fetched Successfully",
+      message: "Doctors Fetched Successfully",
       doctors,
     });
   } catch (err) {
+    console.log(err);
+
     return res.status(500).json({
       success: false,
-      Message: "Unable to load the doctors",
+      message: "Unable to load the doctors",
     });
   }
 };
@@ -31,14 +35,16 @@ const SingleDoctor = async (req, res) => {
     });
   }
 };
-
 const FilterDoctor = async (req, res) => {
   try {
-    const { specialization } = req.params;
+    const { type } = req.params;
 
     const doctors = await DoctorModel.find({
-      specialization,
-    });
+      specialization: {
+        $regex: type,
+        $options: "i",
+      },
+    }).populate("userId");
 
     return res.status(200).json({
       success: true,
@@ -57,4 +63,35 @@ const FilterDoctor = async (req, res) => {
     });
   }
 };
-module.exports = { Doctors, SingleDoctor, FilterDoctor };
+const GetSlots = async (req, res) => {
+  const { doctorId, date } = req.params;
+
+  console.log(doctorId, date);
+  try {
+    const slots = await SlotModel.find({
+      doctorId: doctorId,
+
+      date: date,
+
+      isBooked: false,
+    });
+
+    // console.log(slots);
+
+    return res.status(200).json({
+      success: true,
+
+      slots,
+    });
+  } catch (err) {
+    console.log(err);
+
+    return res.status(500).json({
+      success: false,
+
+      message: "Unable to fetch slots",
+    });
+  }
+};
+
+module.exports = { FilterDoctor, Doctors, SingleDoctor, GetSlots };
