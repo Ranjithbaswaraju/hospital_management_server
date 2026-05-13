@@ -34,6 +34,7 @@ const AddDoctor = async (req, res) => {
     });
 
     const doctor = await DoctorModel.create({
+      name,
       userId: user._id,
 
       specialization,

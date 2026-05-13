@@ -5,7 +5,7 @@ const checkRole = require("../MiddleWares/roleMiddleWare")
 const router=express.Router()
 
 router.post("/appointment/book",AuthMiddleWare,checkRole("patient"),BookAppointment)
-router.delete("/appointment/cancel/:id",AuthMiddleWare,checkRole("patient"),CancelAppointment)
+router.put("/appointment/cancel/:id",AuthMiddleWare,checkRole("patient"),CancelAppointment)
 router.get("/appointment/my-appointment/",AuthMiddleWare,checkRole("patient"),MyAppointments)
 
 

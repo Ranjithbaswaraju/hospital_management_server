@@ -9,7 +9,7 @@ require("dotenv").config();
 
 // transporter
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  service: "Gmail",
   auth: {
     user: process.env.USERMAIL,
     pass: process.env.EMAILPASS,
@@ -49,6 +49,8 @@ const BookAppointment = async (req, res) => {
 
     // find doctor
     const doctor = await DoctorModel.findById(doctorId);
+
+console.log("doctor:", doctor);
 
     console.log("DOCTOR :", doctor);
 
@@ -92,12 +94,61 @@ const BookAppointment = async (req, res) => {
       appointment,
     });
 
-    await transporter
-      .sendMail({
+    await transporter.sendMail({
         from: process.env.USERMAIL,
         to: patient.email,
         subject: "Appointment Booked Successfully",
-        html: `<h1>Appointment Confirmed</h1>`,
+        html: `<div style="font-family: Arial, sans-serif; padding:20px;">
+      <h1 style="color:green;">Appointment Confirmed ✅</h1>
+
+      <p>Hello ${patient.name},</p>
+
+      <p>Your appointment has been booked successfully.</p>
+
+      <h3>Appointment Details:</h3>
+
+      <table style="border-collapse: collapse; width: 100%;">
+        <tr>
+          <td style="border:1px solid #ddd; padding:8px;"><b>Doctor Name</b></td>
+          <td style="border:1px solid #ddd; padding:8px;">
+            ${doctor?.name}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border:1px solid #ddd; padding:8px;"><b>Specialization</b></td>
+          <td style="border:1px solid #ddd; padding:8px;">
+            ${doctor.specialization}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border:1px solid #ddd; padding:8px;"><b>Date</b></td>
+          <td style="border:1px solid #ddd; padding:8px;">
+            ${slot.date}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border:1px solid #ddd; padding:8px;"><b>Time</b></td>
+          <td style="border:1px solid #ddd; padding:8px;">
+            ${slot.time}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="border:1px solid #ddd; padding:8px;"><b>Consultation Fee</b></td>
+          <td style="border:1px solid #ddd; padding:8px;">
+            ₹${doctor.fees}
+          </td>
+        </tr>
+      </table>
+
+      <br/>
+
+      <p>Thank you for choosing our hospital.</p>
+    </div>
+  `,
       })
       .then((info) => {
         console.log("MAIL SENT SUCCESSFULLY");

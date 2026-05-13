@@ -1,7 +1,11 @@
 const mongoose = require("mongoose");
 
 const DoctorSchema = new mongoose.Schema(
+  
   {
+    name:{
+      type:String
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "AuthModel",
