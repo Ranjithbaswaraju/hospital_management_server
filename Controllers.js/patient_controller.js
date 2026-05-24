@@ -1,5 +1,6 @@
 const DoctorModel = require("../Models/DoctorModel");
 const SlotModel = require("../Models/SlotModel");
+const { getDayFromDate, isPastDate } = require("../utils/dateHelper");
 
 const Doctors = async (req, res) => {
   try {
@@ -19,6 +20,7 @@ const Doctors = async (req, res) => {
     });
   }
 };
+
 const SingleDoctor = async (req, res) => {
   const { id } = req.params;
   try {
@@ -26,15 +28,16 @@ const SingleDoctor = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: "Single Doctor Fetched",
+      singleDoctor,
     });
   } catch (err) {
     return res.status(500).json({
       success: false,
-      Message: "Unable to load the single doctors",
-      singleDoctor,
+      message: "Unable to load the single doctors",
     });
   }
 };
+
 const FilterDoctor = async (req, res) => {
   try {
     const { type } = req.params;
@@ -48,9 +51,7 @@ const FilterDoctor = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-
       message: "Doctors Filtered Successfully",
-
       doctors,
     });
   } catch (err) {
@@ -58,37 +59,68 @@ const FilterDoctor = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-
       message: "Unable to Filter Doctors",
     });
   }
 };
+
+// Resolve doctor by Doctor _id or legacy Auth userId
+const resolveDoctor = async (doctorId) => {
+  let doctor = await DoctorModel.findById(doctorId);
+  if (!doctor) {
+    doctor = await DoctorModel.findOne({ userId: doctorId });
+  }
+  return doctor;
+};
+
+// Get available slots for a doctor on a specific date (must match day of week)
 const GetSlots = async (req, res) => {
   const { doctorId, date } = req.params;
 
-  console.log(doctorId, date);
   try {
+    if (isPastDate(date)) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot view slots for past dates",
+        slots: [],
+      });
+    }
+
+    const doctor = await resolveDoctor(doctorId);
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found",
+        slots: [],
+      });
+    }
+
+    const dayOfWeek = getDayFromDate(date);
+
     const slots = await SlotModel.find({
-      doctorId: doctorId,
-
-      date: date,
-
+      $or: [{ doctorId: doctor._id }, { doctorId: doctor.userId }],
+      date,
       isBooked: false,
     });
 
-    // console.log(slots);
+    const matchedSlots = slots.filter((slot) => {
+      if (!slot.days || slot.days.length === 0) return true;
+      return slot.days.includes(dayOfWeek);
+    });
 
     return res.status(200).json({
       success: true,
-
-      slots,
+      selectedDate: date,
+      selectedDay: dayOfWeek,
+      doctorId: doctor._id,
+      slots: matchedSlots,
     });
   } catch (err) {
     console.log(err);
 
     return res.status(500).json({
       success: false,
-
       message: "Unable to fetch slots",
     });
   }

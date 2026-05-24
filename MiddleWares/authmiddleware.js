@@ -1,16 +1,8 @@
-
 const jwt = require("jsonwebtoken");
-const AuthMiddleWare = (
-  req,
-  res,
-  next
-) => {
+
+const AuthMiddleWare = (req, res, next) => {
   try {
-
-    const authHeader =
-      req.headers.authorization;
-
-    console.log(authHeader);
+    const authHeader = req.headers.authorization;
 
     if (!authHeader) {
       return res.status(401).json({
@@ -19,25 +11,21 @@ const AuthMiddleWare = (
       });
     }
 
-    // remove Bearer
-    const token =
-      authHeader.split(" ")[1];
+    const token = authHeader.startsWith("Bearer ")
+      ? authHeader.slice(7)
+      : authHeader.split(" ")[1];
 
-    console.log(token);
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No Token Provided",
+      });
+    }
 
-    const decoded = jwt.verify(
-      token,
-      process.env.secretkey
-    );
-
+    const decoded = jwt.verify(token, process.env.secretkey);
     req.user = decoded;
-
     next();
-
-  } catch (err) {
-
-    console.log(err);
-
+  } catch {
     return res.status(401).json({
       success: false,
       message: "Invalid Token",

@@ -2,7 +2,7 @@ const checkRole = (...roles) => {
   return (req, res, next) => {
     try {
       if (!roles.includes(req.user.role)) {
-        return status(403).json({
+        return res.status(403).json({
           success: false,
           message: "Access Denied",
         });

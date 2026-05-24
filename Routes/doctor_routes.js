@@ -1,6 +1,7 @@
 const express = require("express");
 const {
   AddSlot,
+  GetDoctorSlots,
   Appointments,
   UpdateAppointment,
   DoctorProfile,
@@ -10,6 +11,7 @@ const checkRole = require("../MiddleWares/roleMiddleWare");
 const router = express.Router();
 
 router.post("/doctor/add-slot", AuthMiddleWare, checkRole("doctor"), AddSlot);
+router.get("/doctor/slots", AuthMiddleWare, checkRole("doctor"), GetDoctorSlots);
 router.get(
   "/doctor/appointments",
   AuthMiddleWare,

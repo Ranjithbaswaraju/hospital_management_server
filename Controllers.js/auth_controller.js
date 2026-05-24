@@ -34,7 +34,6 @@ const Register = async (req, res) => {
       User,
     });
   } catch (err) {
-    console.log(err);
     return res.status(400).json({
       success: false,
       message: err.message,
@@ -91,9 +90,7 @@ const Logout = async (req, res) => {
       success: true,
       message: "Logout Successfully",
     });
-  } catch (err) {
-    console.log(err);
-
+  } catch {
     res.status(500).json({
       success: false,
       message: "Unable to Logout",
@@ -108,9 +105,7 @@ const profile = async (req, res) => {
       success: true,
       userData,
     });
-  } catch (err) {
-    console.log(err);
-
+  } catch {
     return res.status(500).json({
       success: false,
       message: "Unable to fetch profile",

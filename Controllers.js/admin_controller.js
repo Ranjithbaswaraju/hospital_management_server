@@ -102,7 +102,9 @@ const AllAppointments = async (req, res) => {
   try {
     const Appointments = await AppointmentModel.find()
       .populate("patientId")
-      .populate("doctorId");
+      .populate({ path: "doctorId", populate: { path: "userId" } })
+      .populate("slotId")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,
@@ -164,6 +166,27 @@ const AdminStats = async (req, res) => {
       status: "Cancelled",
     });
 
+    const doctors = await DoctorModel.find().select("fees");
+    const completedList = await AppointmentModel.find({ status: "Completed" })
+      .populate("doctorId")
+      .limit(500);
+    const bookedList = await AppointmentModel.find({ status: "Booked" })
+      .populate("doctorId")
+      .limit(500);
+
+    const sumFees = (list) =>
+      list.reduce((sum, appt) => sum + (appt.doctorId?.fees || 500), 0);
+
+    const revenue =
+      sumFees(completedList) + Math.round(sumFees(bookedList) * 0.5);
+
+    const recentBookings = await AppointmentModel.find()
+      .populate("patientId")
+      .populate({ path: "doctorId", populate: { path: "userId" } })
+      .populate("slotId")
+      .sort({ createdAt: -1 })
+      .limit(8);
+
     return res.status(200).json({
       success: true,
 
@@ -174,7 +197,9 @@ const AdminStats = async (req, res) => {
         bookedAppointments,
         completedAppointments,
         cancelledAppointments,
+        revenue,
       },
+      recentBookings,
     });
   } catch (err) {
     console.log(err);

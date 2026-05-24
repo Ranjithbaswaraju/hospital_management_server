@@ -2,32 +2,18 @@ const AppointmentModel = require("../Models/AppointmentModel");
 const SlotModel = require("../Models/SlotModel");
 const AuthModel = require("../Models/AuthModel");
 const DoctorModel = require("../Models/DoctorModel");
-
-const nodemailer = require("nodemailer");
+const { getDayFromDate, isPastDate } = require("../utils/dateHelper");
+const {
+  sendBookingConfirmationEmail,
+  sendCancellationEmail,
+} = require("../utils/sendEmail");
 
 require("dotenv").config();
 
-// transporter
-const transporter = nodemailer.createTransport({
-  service: "Gmail",
-  auth: {
-    user: process.env.USERMAIL,
-    pass: process.env.EMAILPASS,
-  },
-});
-
-console.log(process.env.USERMAIL);
-console.log(process.env.EMAILPASS);
 // BOOK APPOINTMENT
 const BookAppointment = async (req, res) => {
   try {
     const { doctorId, slotId, reason } = req.body;
-
-    console.log("DOCTOR ID :", doctorId);
-
-    console.log("SLOT ID :", slotId);
-
-    console.log("BOOK USER :", req.user.id);
 
     // find slot
     const slot = await SlotModel.findById(slotId);
@@ -47,12 +33,25 @@ const BookAppointment = async (req, res) => {
       });
     }
 
+    // prevent past date booking
+    if (isPastDate(slot.date)) {
+      return res.status(400).json({
+        success: false,
+        message: "Cannot book appointments for past dates",
+      });
+    }
+
+    // validate selected date matches slot day
+    const selectedDay = getDayFromDate(slot.date);
+    if (slot.days && slot.days.length > 0 && !slot.days.includes(selectedDay)) {
+      return res.status(400).json({
+        success: false,
+        message: `Selected date (${selectedDay}) does not match doctor's available days`,
+      });
+    }
+
     // find doctor
     const doctor = await DoctorModel.findById(doctorId);
-
-console.log("doctor:", doctor);
-
-    console.log("DOCTOR :", doctor);
 
     if (!doctor) {
       return res.status(404).json({
@@ -80,91 +79,47 @@ console.log("doctor:", doctor);
       status: "Booked",
     });
 
-    console.log("APPOINTMENT :", appointment);
-
-    // update slot
+    // mark slot as booked
     slot.isBooked = true;
-
     await slot.save();
 
-    // send success response immediately
-    res.status(201).json({
+    // send confirmation email (must succeed before returning success)
+    try {
+      const doctorName = doctor.name || doctor.userId?.name || "Doctor";
+
+      await sendBookingConfirmationEmail({
+        patientEmail: patient.email,
+        patientName: patient.name,
+        doctorName,
+        date: slot.date,
+        time: slot.time,
+        bookingId: appointment._id.toString(),
+      });
+    } catch (emailErr) {
+      // rollback booking if email fails
+      slot.isBooked = false;
+      await slot.save();
+      await AppointmentModel.findByIdAndDelete(appointment._id);
+
+      console.log("EMAIL ERROR:", emailErr.message);
+
+      return res.status(500).json({
+        success: false,
+        message: `Appointment booked but confirmation email failed: ${emailErr.message}`,
+      });
+    }
+
+    return res.status(201).json({
       success: true,
-      message: "Appointment Booked Successfully",
+      message: "Appointment Booked Successfully. Confirmation email sent.",
       appointment,
     });
-
-    await transporter.sendMail({
-        from: process.env.USERMAIL,
-        to: patient.email,
-        subject: "Appointment Booked Successfully",
-        html: `<div style="font-family: Arial, sans-serif; padding:20px;">
-      <h1 style="color:green;">Appointment Confirmed ✅</h1>
-
-      <p>Hello ${patient.name},</p>
-
-      <p>Your appointment has been booked successfully.</p>
-
-      <h3>Appointment Details:</h3>
-
-      <table style="border-collapse: collapse; width: 100%;">
-        <tr>
-          <td style="border:1px solid #ddd; padding:8px;"><b>Doctor Name</b></td>
-          <td style="border:1px solid #ddd; padding:8px;">
-            ${doctor?.name}
-          </td>
-        </tr>
-
-        <tr>
-          <td style="border:1px solid #ddd; padding:8px;"><b>Specialization</b></td>
-          <td style="border:1px solid #ddd; padding:8px;">
-            ${doctor.specialization}
-          </td>
-        </tr>
-
-        <tr>
-          <td style="border:1px solid #ddd; padding:8px;"><b>Date</b></td>
-          <td style="border:1px solid #ddd; padding:8px;">
-            ${slot.date}
-          </td>
-        </tr>
-
-        <tr>
-          <td style="border:1px solid #ddd; padding:8px;"><b>Time</b></td>
-          <td style="border:1px solid #ddd; padding:8px;">
-            ${slot.time}
-          </td>
-        </tr>
-
-        <tr>
-          <td style="border:1px solid #ddd; padding:8px;"><b>Consultation Fee</b></td>
-          <td style="border:1px solid #ddd; padding:8px;">
-            ₹${doctor.fees}
-          </td>
-        </tr>
-      </table>
-
-      <br/>
-
-      <p>Thank you for choosing our hospital.</p>
-    </div>
-  `,
-      })
-      .then((info) => {
-        console.log("MAIL SENT SUCCESSFULLY");
-
-        console.log(info);
-      })
-      .catch((err) => {
-        console.log("MAIL ERROR :", err);
-      });
-    console.log("PATIENT EMAIL :", patient.email);
   } catch (err) {
-    console.log("BOOK APPOINTMENT ERROR :", err);
+    console.log("BOOK APPOINTMENT ERROR:", err);
 
     return res.status(500).json({
       success: false,
-      message: err.message,
+      message: err.message || "Unable to book appointment",
     });
   }
 };
@@ -184,7 +139,6 @@ const CancelAppointment = async (req, res) => {
     }
 
     appointment.status = "Cancelled";
-
     await appointment.save();
 
     // free slot
@@ -192,40 +146,25 @@ const CancelAppointment = async (req, res) => {
       isBooked: false,
     });
 
-    // patient
     const patient = await AuthModel.findById(appointment.patientId);
 
-    // send response
-    res.status(200).json({
+    // send cancellation email
+    try {
+      if (patient?.email) {
+        await sendCancellationEmail({
+          patientEmail: patient.email,
+          patientName: patient.name,
+        });
+      }
+    } catch (emailErr) {
+      console.log("CANCEL EMAIL ERROR:", emailErr.message);
+      // cancellation still succeeds even if email fails
+    }
+
+    return res.status(200).json({
       success: true,
       message: "Appointment Cancelled Successfully",
     });
-
-    // send cancel mail
-    transporter
-      .sendMail({
-        from: process.env.USERMAIL,
-
-        to: patient.email,
-
-        subject: "Appointment Cancelled",
-
-        html: `
-        <h1 style="color:red">
-          Appointment Cancelled ❌
-        </h1>
-
-        <p>
-          Your appointment has been cancelled successfully.
-        </p>
-      `,
-      })
-      .then(() => {
-        console.log("CANCEL MAIL SENT");
-      })
-      .catch((err) => {
-        console.log("MAIL ERROR :", err);
-      });
   } catch (err) {
     console.log(err);
 
@@ -239,13 +178,12 @@ const CancelAppointment = async (req, res) => {
 // MY APPOINTMENTS
 const MyAppointments = async (req, res) => {
   try {
-    console.log("FETCH USER :", req.user.id);
-
     const appointments = await AppointmentModel.find({
       patientId: req.user.id,
     })
-      .populate("doctorId")
-      .populate("slotId");
+      .populate({ path: "doctorId", populate: { path: "userId" } })
+      .populate("slotId")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       success: true,

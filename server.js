@@ -35,6 +35,4 @@ app.use("/api", appointmentRoutes);
 app.use("/api", doctorRoutes);
 app.use("/api", patientRoutes);
 
-app.listen(port, () => {
-  console.log(`Server running at ${port}`);
-});
+app.listen(port);
