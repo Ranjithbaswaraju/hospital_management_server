@@ -1,3 +1,5 @@
+require("./configure_db/env");
+
 const express = require("express");
 const app = express();
 const port = 3100;

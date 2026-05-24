@@ -1,7 +1,5 @@
 const sgMail = require("@sendgrid/mail");
 
-require("dotenv").config();
-
 // Set SendGrid API key from environment
 if (process.env.SENDGRID_API_KEY) {
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);

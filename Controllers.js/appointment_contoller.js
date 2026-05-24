@@ -8,8 +8,6 @@ const {
   sendCancellationEmail,
 } = require("../utils/sendEmail");
 
-require("dotenv").config();
-
 // BOOK APPOINTMENT
 const BookAppointment = async (req, res) => {
   try {

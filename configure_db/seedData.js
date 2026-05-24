@@ -4,7 +4,7 @@
  */
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
-require("dotenv").config();
+const { getMongoUri, maskMongoUri } = require("./env");
 
 const AuthModel = require("../Models/AuthModel");
 const DoctorModel = require("../Models/DoctorModel");
@@ -138,7 +138,11 @@ const generateTimeSlots = (date, startTime, endTime, doctorId, days) => {
 
 async function seedDatabase() {
   try {
-    await mongoose.connect(process.env.MONGO_URL, { dbName: "Hospital" });
+    const uri = getMongoUri();
+    const dbName = process.env.MONGO_DB_NAME || "Hospital";
+    console.log("MONGO_URI in use:", maskMongoUri(uri));
+    console.log("MongoDB database name:", dbName);
+    await mongoose.connect(uri, { dbName });
     console.log("Connected to MongoDB");
 
     // Clear existing data (optional - comment out if you want to keep data)
